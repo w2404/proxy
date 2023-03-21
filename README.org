@@ -1,0 +1,70 @@
+* 最简单的代理服务器设置
+首先，下载 https://github.com/apernet/hysteria/releases/download/v1.3.4/hysteria-windows-amd64.exe
+
+然后把它和config.json放在同一个目录，双击它就会开始运行代理服务器，服务器端口是9700的http代理和9701的socks5代理。
+
+* 如何用chrome连接代理服务器
+  在命令行中输入下面的命令，或者复制一个chrome快捷方式，把它写入快捷方式中。
+
+#+BEGIN_SRC bash
+chrome --user-data-dir="某个你设定的本地目录，比如D:/hprofile/" --proxy-server="http://localhost:9700"
+#+END_SRC
+
+至于firefox，可以在 选项 -> 高级 -> 连接 中设置代理服务器。全部都是图形界面操作，不用命令行。
+
+* 安全
+  如果要考虑安全因素，设置起来就比较麻烦了。
+
+** hysteria的信誉 
+hysteria是匿名程序员开发的，所以它的作者没有信誉。但是它是开源的，它有一定的用户量。如果它有漏洞或是后门，其他程序员有可能发现。因此你可以认为它的源码是相对安全的。然后如果你自己编译它，那么得到的可执行文件还是相对安全的。
+
+但是如果你通过我上面给的链接下载它的可执行文件，那这就是作者编译的，并且没有被其他程序员审核，所以它的信誉比hysteria的源码更低。
+** 沙盒
+   如果你想要更安全的使用它，你可以把它放在沙盒里。
+*** windows的账号
+    windows的账号就是一种简单的沙盒。你可以新建一个windows用户账号来执行它，这样它就没会有访问你的主账号目录的权限。用第二个账号执行它所启动的代理服务器端口，主账号的chrome也是可以连接的。
+
+    首先，我觉得这个办法用起来比较麻烦，要在开始菜单中切换账户。其次它只能保护C盘的文件，其他盘符中的文件通常权限设置很宽松，不会被保护到。
+*** openwrt路由器
+    或者你也可以把hysteria放到openwrt路由器的账号中，只要路由器不重启，它就会一直运行。
+
+    openwrt路由器我推荐红米ax6s或者红米ac2100。
+    
+    首先通过putty或是ssh连接openwrt，一般连接进入openwrt后，使用的账号是管理员root。我们需要新建一个账号h，作为hysteria的沙盒。
+
+#+BEGIN_SRC bash
+  opkg update
+  opkg install htop
+  opkg install aria2
+  opkg install bash
+  opkg install shadow-su
+  opkg install shadow-useradd
+  # 确保以上软件下载安装成功后
+
+  #添加账号h
+  useradd h
+  mkdir -p /home/h
+  chown h /home/h
+
+  #登录账号h，作为沙盒
+  su h
+  #进入h主目录
+  cd 
+  #为ax6s下载hysteria。ac2100可能要用另一个版本，但是我不确定是哪个
+  aria2c https://github.com/apernet/hysteria/releases/download/v1.3.4/hysteria-linux-arm64
+  #或许是这个
+  aria2c https://github.com/apernet/hysteria/releases/download/v1.3.4/hysteria-linux-arm
+  #用vim编辑config.json。按 i 进入输入模式，粘贴内容，按 esc 退出输入模式，顺序按 :wq 保存退出
+  vim config.json
+  #把hysteria变成可执行文件
+  chmod +x hysteria-linux-arm64
+  #执行hysteria，以后你每次重启路由器，都需要到这里执行hysteria打开代理服务器
+  ./hysteria-linux-arm64 &
+  #然后假设你的路由器地址是192.168.1.1，那么把你的浏览器代理地址设置到http://192.168.1.1:9700
+  #试着打开浏览器，开几个网站，你会看到这里有一些log记录
+  #最后连续按ctrl+d，退出
+
+
+#+END_SRC
+* 结语
+  我可能有什么没想到，也有可能哪条命令写错了，如果你遇到问题，告诉我，我再补充。
